@@ -1,8 +1,12 @@
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.List;// Feature 3 :  Added imports to use List
+import java.util.ArrayList;// and ArrayList for storing processes
 
 // ANSI Color Codes for enhanced terminal output
 class Colors {
@@ -31,6 +35,9 @@ class Process implements Runnable {
     private int remainingTime; // Time left for the process to finish its execution
     private int priority;// Feature 1: Added a new priority attribute to the Process class
     // Constructor to initialize the process with name, burst time, and time quantum
+    // Feature 3 : Added fields to track queue entry time and waiting time
+    private long lastQueueEnterTime;
+    private long waitingTime;
 
     public Process(String name, int burstTime, int timeQuantum, int priority) {
         // Feature 1: Updated the constructor to receive the priority value as a new
@@ -41,6 +48,9 @@ class Process implements Runnable {
         this.remainingTime = burstTime; // Initially, remaining time is equal to the burst time
         this.priority = priority;// Feature 1: Added the assignment of the priority parameter to the priority
                                  // attribute
+        this.lastQueueEnterTime = System.currentTimeMillis(); // Feature 3 : Initialized waiting time values for each
+                                                              // process
+        this.waitingTime = 0;
 
     }
 
@@ -149,6 +159,26 @@ class Process implements Runnable {
         return priority;
     }
 
+    // Feature 3 : Added a getter for waiting time
+    public long getWaitingTime() {
+        return waitingTime;
+    }
+
+    // Feature 3 : Added a getter for last queue entry time
+    public long getLastQueueEnterTime() {
+        return lastQueueEnterTime;
+    }
+
+    // Feature 3: Added a setter for queue entry time
+    public void setLastQueueEnterTime(long time) {
+        this.lastQueueEnterTime = time;
+    }
+
+    // Feature 3 : Added a method to update waiting time
+    public void addWaitingTime(long time) {
+        this.waitingTime += time;
+    }
+
     // Check if the process has finished (i.e., no remaining time)
     public boolean isFinished() {
         return remainingTime <= 0;
@@ -179,6 +209,9 @@ public class SchedulerSimulation {
 
         // Map to associate each thread with its respective process object
         Map<Thread, Process> processMap = new HashMap<>();
+
+        // Feature 3 : Created a list to store all processes for the final summary
+        List<Process> allProcesses = new ArrayList<>();
 
         // Print simulation header with elegant formatting
         System.out.println("\n" + Colors.BOLD + Colors.BRIGHT_CYAN +
@@ -220,7 +253,8 @@ public class SchedulerSimulation {
             // Feature 1: Updated the Process object creation to include the new priority
             // value
             Process process = new Process("P" + i, burstTime, timeQuantum, priority);
-
+            // Feature 3: Added each process to the list for final summary
+            allProcesses.add(process);
             // Add the process to the ready queue and the map
             addProcessToQueue(process, processQueue, processMap);
         }
@@ -242,12 +276,15 @@ public class SchedulerSimulation {
             // Get the next thread from the queue (FIFO)
             Thread currentThread = processQueue.poll(); // Dequeues the next thread
 
+            Process process = processMap.get(currentThread);
+            // Feature 3 : eature Calculated waiting time before starting the process
+            process.addWaitingTime(System.currentTimeMillis() - process.getLastQueueEnterTime());
             // Print the current process queue (list of process IDs in the queue)
             System.out.println(Colors.BOLD + Colors.MAGENTA + "┌─ Ready Queue " + "─".repeat(65) + Colors.RESET);
             System.out.print(Colors.MAGENTA + "│ " + Colors.RESET + Colors.BRIGHT_WHITE + "[" + Colors.RESET);
             int queueCount = 0;
             for (Thread thread : processQueue) {
-                Process process = processMap.get(thread);
+                Process p = processMap.get(thread);
                 if (queueCount > 0)
                     System.out.print(Colors.WHITE + " → " + Colors.RESET);
                 System.out.print(Colors.BRIGHT_CYAN + process.getName() + Colors.RESET);
@@ -272,7 +309,7 @@ public class SchedulerSimulation {
             }
 
             // Retrieve the process associated with the thread from the map
-            Process process = processMap.get(currentThread);
+            Process finishedProcess = processMap.get(currentThread);
 
             // Check if the process is not finished
             if (!process.isFinished()) {
@@ -308,12 +345,21 @@ public class SchedulerSimulation {
                 Colors.RESET + "\n");
         // Feature 2 : Printed total number of context switches at the end
         System.out.println("Total context switches: " + contextSwitchCount);
+        // Feature 3 : Displayed a summary table showing each process name, burst time,
+        // and waiting time
+        System.out.println("\nProcess Name\tBurst Time\tWaiting Time");
+        for (Process process : allProcesses) {
+            System.out.println(process.getName() + "\t\t" + process.getBurstTime() + "\t\t" + process.getWaitingTime());
+        }
+
     }
 
     // Method to add a process to the queue and map, while printing a "ready"
     // message
     public static void addProcessToQueue(Process process, Queue<Thread> processQueue,
             Map<Thread, Process> processMap) {
+        // Feature 3 : Recorded queue entry time for the process
+        process.setLastQueueEnterTime(System.currentTimeMillis());
         // Create a new thread to run the process
         Thread thread = new Thread(process);
 
