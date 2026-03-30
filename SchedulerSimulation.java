@@ -156,6 +156,9 @@ class Process implements Runnable {
 }
 
 public class SchedulerSimulation {
+    // Feature 2 : Added a static counter to keep track of context switches
+    private static int contextSwitchCount = 0;
+
     public static void main(String[] args) {
         // ⚠️ IMPORTANT: Put your student ID here to seed the random number generator
         // This makes your output unique to you - DO NOT forget to change this!
@@ -255,7 +258,8 @@ public class SchedulerSimulation {
             }
             System.out.println(Colors.BRIGHT_WHITE + "]" + Colors.RESET);
             System.out.println(Colors.BOLD + Colors.MAGENTA + "└" + "─".repeat(79) + Colors.RESET + "\n");
-
+            // Feature 2 : Increased the context switch counter before starting a process
+            contextSwitchCount++;
             // Start the thread, which will run the process for one time quantum
             currentThread.start();
 
@@ -282,6 +286,10 @@ public class SchedulerSimulation {
                     System.out.println(Colors.BRIGHT_YELLOW + "  ⚠ " + Colors.CYAN + process.getName() +
                             Colors.RESET + Colors.YELLOW + " is the last process → running to completion" +
                             Colors.RESET);
+
+                    // Feature 2 : Increased the counter again before running the last process to
+                    // completion
+                    contextSwitchCount++;
                     process.runToCompletion(); // Run until the process completes
                 }
             }
@@ -298,6 +306,8 @@ public class SchedulerSimulation {
         System.out.println(Colors.BOLD + Colors.BRIGHT_GREEN +
                 "╚════════════════════════════════════════════════════════════════════════════════╝" +
                 Colors.RESET + "\n");
+        // Feature 2 : Printed total number of context switches at the end
+        System.out.println("Total context switches: " + contextSwitchCount);
     }
 
     // Method to add a process to the queue and map, while printing a "ready"
